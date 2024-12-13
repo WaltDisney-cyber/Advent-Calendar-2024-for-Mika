@@ -1,4 +1,16 @@
 const express = require("express");
+const cors = require("cors"); // Importiere CORS
+const app = express();
+
+// Aktiviere CORS
+app.use(cors());
+app.use(express.json());
+
+const port = process.env.PORT || 3000;
+
+// Dein bestehender Code bleibt gleich
+
+const express = require("express");
 const app = express();
 const port = process.env.PORT || 3000;
 
