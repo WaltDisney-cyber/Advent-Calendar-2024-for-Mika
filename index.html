@@ -34,89 +34,82 @@
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         }
-        .door.locked {
-            cursor: default;
-            pointer-events: none;
-        }
         .door.open {
             background-color: #fff;
             color: #000;
             pointer-events: none;
         }
-        .content {
-            display: none;
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: #fff;
-            color: #000;
-            font-size: 0.8em;
-            align-items: center;
-            justify-content: center;
-            border-radius: 10px;
-        }
-        .door.open .content {
-            display: flex;
-        }
     </style>
 </head>
 <body>
-    <h1>Adventskalender für meine Frau</h1>
+    <h1>Adventskalender</h1>
     <p>Öffne jeden Tag ein Türchen!</p>
     <div class="calendar" id="calendar"></div>
 
     <script>
-        const contents = [
-            "Ganzkörper-Massage",
-            "Kochen eines Wunschgerichts",
-            "Wohnung saugen und wischen",
-            "Bad gründlich putzen",
-            "Ein gemeinsames heißes Schaumbad vorbereiten mit Kerzen",
-            "Filmabend mit einem Film deiner Wahl",
-            "Einen Tag komplett nach deinen Wünschen gestalten",
-            "Eine Runde Karten- oder Brettspiele zusammen spielen",
-            "Fotobuch oder Fotos ausdrucken und zusammen gestalten",
-            "Gemeinsames Backen (Plätzchen, Kuchen, etc.)",
-            "Spontaner Kurzurlaub oder Tagesausflug planen",
-            "Kleidung zusammen aussortieren (und ich kümmere mich um Entsorgung etc.)"
-        ];
+        // Backend URL from Render
+        const backendUrl = "https://advent-calendar-2024-for-mika-1.onrender.com/get-content";
 
-        // Zufällig mischen
-        contents.sort(() => Math.random() - 0.5);
+        // Load saved results from Local Storage
+        const savedResults = JSON.parse(localStorage.getItem('adventCalendarResults')) || {};
+
+        // Pre-fill the result for 13.12.2024
+        savedResults["2024-12-13T00:00:00.000Z"] = "Eine Runde Karten- oder Brettspiele zusammen spielen";
+        localStorage.setItem('adventCalendarResults', JSON.stringify(savedResults));
 
         const calendar = document.getElementById('calendar');
-        const today = new Date();
 
         for (let i = 13; i <= 24; i++) {
             const door = document.createElement('div');
-            door.classList.add('door', 'locked');
+            door.classList.add('door');
             door.textContent = i;
 
-            const content = document.createElement('div');
-            content.classList.add('content');
-            content.textContent = contents[i - 13];
+            const currentDate = new Date(2024, 11, i).toISOString();
 
-            door.appendChild(content);
+            // If the door was already opened, show the saved content
+            if (savedResults[currentDate]) {
+                door.classList.add('open');
+                door.textContent = savedResults[currentDate];
+            } else {
+                // Add a click event listener for unopened doors
+                door.addEventListener('click', () => {
+                    const today = new Date();
+                    const doorDate = new Date(2024, 11, i);
 
-            const doorDate = new Date(today.getFullYear(), today.getMonth(), i);
+                    // Prevent opening doors for future dates
+                    if (today < doorDate) {
+                        alert(`Dieses Türchen kannst du erst am ${i}.12. öffnen!`);
+                        return;
+                    }
 
-            door.addEventListener('click', () => {
-                if (new Date() >= doorDate) {
-                    door.classList.remove('locked');
-                    door.classList.add('open');
-                } else {
-                    alert('Dieses Türchen kannst du erst am ' + i + '.12. öffnen!');
-                }
-            });
+                    // Fetch the result from the backend
+                    fetch(backendUrl, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ date: doorDate.toISOString() })
+                    })
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error("Dieses Türchen kann nicht geöffnet werden.");
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            // Save the result locally
+                            savedResults[doorDate.toISOString()] = data.content;
+                            localStorage.setItem('adventCalendarResults', JSON.stringify(savedResults));
+
+                            // Mark the door as opened and display the content
+                            door.classList.add('open');
+                            door.textContent = data.content;
+                        })
+                        .catch(err => {
+                            alert(err.message);
+                        });
+                });
+            }
 
             calendar.appendChild(door);
-
-            // Set the class dynamically to enable opening for past dates
-            if (today >= doorDate) {
-                door.classList.remove('locked');
-            }
         }
     </script>
 </body>
