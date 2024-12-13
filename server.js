@@ -1,19 +1,12 @@
 const express = require("express");
-const cors = require("cors"); // Import CORS
+const cors = require("cors");
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Configure CORS
-const corsOptions = {
-    origin: "*", // Allow all origins (for development purposes)
-    methods: "GET,POST,PUT,DELETE",
-    allowedHeaders: "Content-Type"
-};
-app.use(cors(corsOptions)); // Enable CORS with these options
-app.use(express.json()); // Enable JSON parsing
+app.use(cors());
+app.use(express.json());
 
-// Advent calendar content
 const calendarContent = [
     "Ganzkörper-Massage",
     "Kochen eines Wunschgerichts",
@@ -29,16 +22,18 @@ const calendarContent = [
     "Kleidung zusammen aussortieren (und ich kümmere mich um Entsorgung etc.)"
 ];
 
-let openedDoors = {}; // Track opened doors
+let openedDoors = {}; // Speichert die geöffneten Inhalte
 
-// Route to handle Advent calendar requests
 app.post("/get-content", (req, res) => {
     const { date } = req.body;
     const requestedDate = new Date(date);
     const today = new Date();
 
-    // Validate the date
-    if (requestedDate > today) {
+    // Vergleiche nur das Datum ohne Zeit
+    const requestedDay = requestedDate.toISOString().split("T")[0];
+    const todayDay = today.toISOString().split("T")[0];
+
+    if (requestedDay > todayDay) {
         return res.status(400).json({ error: "You cannot open a future door!" });
     }
 
@@ -47,18 +42,17 @@ app.post("/get-content", (req, res) => {
         return res.status(400).json({ error: "Invalid date for Advent calendar!" });
     }
 
-    // Check if the door is already opened
+    // Gibt den Inhalt zurück, wenn das Türchen bereits geöffnet wurde
     if (openedDoors[day]) {
-        return res.json({ content: calendarContent[day - 13] });
+        return res.json({ content: openedDoors[day] });
     }
 
-    // Mark the door as opened and return the content
+    // Markiere das Türchen als geöffnet und speichere den Inhalt
     const content = calendarContent[day - 13];
-    openedDoors[day] = true;
+    openedDoors[day] = content;
     res.json({ content });
 });
 
-// Start the server
 app.listen(port, () => {
     console.log(`Server running on port ${port}`);
 });
