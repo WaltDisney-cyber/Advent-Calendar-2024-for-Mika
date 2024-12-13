@@ -20,7 +20,6 @@ const calendarContent = [
     "Ein gemeinsames heißes Schaumbad vorbereiten mit Kerzen",
     "Filmabend mit einem Film deiner Wahl",
     "Einen Tag komplett nach deinen Wünschen gestalten",
-    "Eine Runde Karten- oder Brettspiele zusammen spielen",
     "Fotobuch oder Fotos ausdrucken und zusammen gestalten",
     "Gemeinsames Backen (Plätzchen, Kuchen, etc.)",
     "Spontaner Kurzurlaub oder Tagesausflug planen",
@@ -59,13 +58,31 @@ app.post("/get-content", (req, res) => {
         return res.status(400).json({ error: "Ungültiges Datum für den Adventskalender!" });
     }
 
+    // Handle Türchen 13 with fixed content
+    if (day === 13) {
+        const content = "Eine Runde Karten- oder Brettspiele zusammen spielen";
+        openedDoors[day] = content;
+
+        try {
+            fs.writeFileSync(dataFile, JSON.stringify(openedDoors, null, 2));
+        } catch (error) {
+            console.error("Fehler beim Speichern der Datei:", error);
+            return res.status(500).json({ error: "Interner Fehler beim Speichern des Inhalts." });
+        }
+
+        return res.json({ content });
+    }
+
     // Prüfen, ob die Tür schon geöffnet wurde
     if (openedDoors[day]) {
         return res.json({ content: openedDoors[day] });
     }
 
     // Tür öffnen und Inhalt speichern
-    const content = calendarContent[day - 13];
+    const filteredContent = calendarContent.filter(
+        (c) => c !== "Eine Runde Karten- oder Brettspiele zusammen spielen"
+    );
+    const content = filteredContent[day - 14];
     openedDoors[day] = content;
 
     try {
