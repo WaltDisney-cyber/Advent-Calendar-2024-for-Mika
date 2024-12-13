@@ -1,3 +1,7 @@
+const fs = require("fs");
+const dataFile = "./openedDoors.json";
+const dayjs = require("dayjs");
+
 const express = require("express");
 const cors = require("cors");
 
@@ -24,14 +28,19 @@ const calendarContent = [
 
 let openedDoors = {}; // Speichert die geöffneten Inhalte
 
+if (fs.existsSync(dataFile)) {
+    openedDoors = JSON.parse(fs.readFileSync(dataFile));
+}
+
 app.post("/get-content", (req, res) => {
     const { date } = req.body;
-    const requestedDate = new Date(date);
-    const today = new Date();
-
-    // Vergleiche nur das Datum ohne Zeit
-    const requestedDay = requestedDate.toISOString().split("T")[0];
-    const todayDay = today.toISOString().split("T")[0];
+    const requestedDate = dayjs(date);
+    const today = dayjs();
+    
+    if (requestedDate.isAfter(today, "day")) {
+        return res.status(400).json({ error: "Du kannst keine zukünftige Tür öffnen!" });
+    }
+    
 
     if (requestedDay > todayDay) {
         return res.status(400).json({ error: "You cannot open a future door!" });
@@ -50,7 +59,13 @@ app.post("/get-content", (req, res) => {
     // Markiere das Türchen als geöffnet und speichere den Inhalt
     const content = calendarContent[day - 13];
     openedDoors[day] = content;
+    fs.writeFileSync(dataFile, JSON.stringify(openedDoors));
     res.json({ content });
+});
+
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).json({ error: "Ein unerwarteter Fehler ist aufgetreten. Bitte versuche es später erneut." });
 });
 
 app.listen(port, () => {

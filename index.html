@@ -39,6 +39,18 @@
             color: #000;
             pointer-events: none;
         }
+        .door.open {
+            animation: openDoor 0.5s ease-in-out;
+        }
+        
+        @keyframes openDoor {
+            from {
+                transform: rotateY(0deg);
+            }
+            to {
+                transform: rotateY(180deg);
+            }
+        }        
     </style>
 </head>
 <body>
@@ -104,7 +116,13 @@
                             door.textContent = data.content;
                         })
                         .catch(err => {
-                            alert(err.message);
+                            const errorDiv = document.createElement("div");
+                            errorDiv.textContent = err.message;
+                            errorDiv.style.color = "red";
+                            document.body.appendChild(errorDiv);
+                            
+                            setTimeout(() => errorDiv.remove(), 3000); // Entfernt die Fehlermeldung nach 3 Sekunden
+                            
                         });
                 });
             }
