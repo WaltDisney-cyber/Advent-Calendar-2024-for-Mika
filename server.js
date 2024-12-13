@@ -1,18 +1,12 @@
-const express = require("express");
-const cors = require("cors"); // Importiere CORS
-const app = express();
+const express = require("express"); // Import express
+const cors = require("cors"); // Import CORS
 
-// Aktiviere CORS
+const app = express(); // Initialize express
+const port = process.env.PORT || 3000; // Set the port
+
+// Enable CORS and JSON parsing
 app.use(cors());
 app.use(express.json());
-
-const port = process.env.PORT || 3000;
-
-// Dein bestehender Code bleibt gleich
-
-const express = require("express");
-const app = express();
-const port = process.env.PORT || 3000;
 
 // Advent calendar content
 const calendarContent = [
@@ -32,14 +26,13 @@ const calendarContent = [
 
 let openedDoors = {}; // Track opened doors
 
-app.use(express.json());
-
+// Route to handle Advent calendar requests
 app.post("/get-content", (req, res) => {
-    const { date } = req.body;
+    const { date } = req.body; // Extract date from request body
     const requestedDate = new Date(date);
     const today = new Date();
 
-    // Validate date
+    // Validate the date
     if (requestedDate > today) {
         return res.status(400).json({ error: "You cannot open a future door!" });
     }
@@ -51,15 +44,16 @@ app.post("/get-content", (req, res) => {
 
     // Check if the door is already opened
     if (openedDoors[day]) {
-        return res.status(400).json({ error: "This door is already opened!" });
+        return res.json({ content: calendarContent[day - 13] });
     }
 
-    // Mark door as opened and return the content
+    // Mark the door as opened and return the content
     const content = calendarContent[day - 13];
     openedDoors[day] = true;
     res.json({ content });
 });
 
+// Start the server
 app.listen(port, () => {
     console.log(`Server running on port ${port}`);
 });
