@@ -1,12 +1,17 @@
-const express = require("express"); // Import express
+const express = require("express");
 const cors = require("cors"); // Import CORS
 
-const app = express(); // Initialize express
-const port = process.env.PORT || 3000; // Set the port
+const app = express();
+const port = process.env.PORT || 3000;
 
-// Enable CORS and JSON parsing
-app.use(cors());
-app.use(express.json());
+// Configure CORS
+const corsOptions = {
+    origin: "*", // Allow all origins (for development purposes)
+    methods: "GET,POST,PUT,DELETE",
+    allowedHeaders: "Content-Type"
+};
+app.use(cors(corsOptions)); // Enable CORS with these options
+app.use(express.json()); // Enable JSON parsing
 
 // Advent calendar content
 const calendarContent = [
@@ -28,7 +33,7 @@ let openedDoors = {}; // Track opened doors
 
 // Route to handle Advent calendar requests
 app.post("/get-content", (req, res) => {
-    const { date } = req.body; // Extract date from request body
+    const { date } = req.body;
     const requestedDate = new Date(date);
     const today = new Date();
 
