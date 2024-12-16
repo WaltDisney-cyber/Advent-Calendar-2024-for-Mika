@@ -9,9 +9,12 @@
             font-family: Arial, sans-serif;
             text-align: center;
             background-color: #f7f7f7;
+            margin: 0;
+            padding: 0;
         }
         h1 {
             color: #d6336c;
+            margin-top: 20px;
         }
         .calendar {
             display: grid;
@@ -19,6 +22,7 @@
             gap: 10px;
             max-width: 600px;
             margin: 20px auto;
+            padding: 0;
         }
         .door {
             position: relative;
@@ -33,7 +37,7 @@
             cursor: pointer;
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            transition: transform 0.3s;
+            transition: transform 0.3s, background-color 0.3s;
         }
         .door:hover {
             transform: scale(1.05);
@@ -60,75 +64,85 @@
     <div class="calendar" id="calendar"></div>
 
     <script>
-        // Backend URL
-        const backendUrl = "https://advent-calendar-2024-for-mika-1.onrender.com/get-content";
-
-        // Load saved results from Local Storage
-        const savedResults = JSON.parse(localStorage.getItem('adventCalendarResults')) || {};
-
-        // Pre-fill the result for 13.12.2024
-        savedResults["2024-12-13T00:00:00.000Z"] = "Eine Runde Karten- oder Brettspiele zusammen spielen";
-        localStorage.setItem('adventCalendarResults', JSON.stringify(savedResults));
+        // Backend URLs
+        const backendUrl = "https://advent-calendar-2024-for-mika-1.onrender.com";
+        const getOpenedDoorsUrl = `${backendUrl}/get-opened-doors`;
+        const getContentUrl = `${backendUrl}/get-content`;
 
         const calendar = document.getElementById('calendar');
 
-        for (let i = 13; i <= 24; i++) {
-            const door = document.createElement('div');
-            door.classList.add('door');
-            door.textContent = i;
+        // Fetch the opened doors from the server
+        fetch(getOpenedDoorsUrl)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error("Fehler beim Abrufen der geöffneten Türchen.");
+                }
+                return response.json();
+            })
+            .then(openedDoors => {
+                // Initialize the calendar with doors 13 to 24
+                for (let i = 13; i <= 24; i++) {
+                    const door = document.createElement('div');
+                    door.classList.add('door');
+                    door.textContent = i;
 
-            const doorDate = new Date(2024, 11, i).toISOString();
+                    const doorDate = new Date(2024, 11, i).toISOString();
 
-            // If the door was already opened, show the saved content
-            if (savedResults[doorDate]) {
-                door.classList.add('open');
-                door.textContent = savedResults[doorDate];
-            } else {
-                // Add a click event listener for unopened doors
-                door.addEventListener('click', () => {
-                    const today = new Date();
-                    const currentDoorDate = new Date(2024, 11, i);
+                    // Check if the door has been opened
+                    if (openedDoors[doorDate]) {
+                        door.classList.add('open');
+                        door.textContent = openedDoors[doorDate];
+                    } else {
+                        // Add click event listener for unopened doors
+                        door.addEventListener('click', () => {
+                            const today = new Date();
+                            const currentDoorDate = new Date(2024, 11, i);
 
-                    // Prevent opening doors for future dates
-                    if (today < currentDoorDate) {
-                        alert(`Dieses Türchen kannst du erst am ${i}.12. öffnen!`);
-                        return;
+                            // Prevent opening doors for future dates
+                            if (today < currentDoorDate) {
+                                alert(`Dieses Türchen kannst du erst am ${i}.12. öffnen!`);
+                                return;
+                            }
+
+                            // Fetch the content for the door from the server
+                            fetch(getContentUrl, {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ date: currentDoorDate.toISOString() })
+                            })
+                            .then(response => {
+                                if (!response.ok) {
+                                    throw new Error("Dieses Türchen kann nicht geöffnet werden.");
+                                }
+                                return response.json();
+                            })
+                            .then(data => {
+                                // Update the door to show the content
+                                door.classList.add('open');
+                                door.textContent = data.content;
+                            })
+                            .catch(err => {
+                                const errorDiv = document.createElement("div");
+                                errorDiv.textContent = err.message;
+                                errorDiv.style.color = "red";
+                                document.body.appendChild(errorDiv);
+                                
+                                setTimeout(() => errorDiv.remove(), 3000); // Remove the error message after 3 seconds
+                            });
+                        });
                     }
 
-                    // Fetch the result from the backend
-                    fetch(backendUrl, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ date: currentDoorDate.toISOString() })
-                    })
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error("Dieses Türchen kann nicht geöffnet werden.");
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        // Save the result locally
-                        savedResults[doorDate] = data.content;
-                        localStorage.setItem('adventCalendarResults', JSON.stringify(savedResults));
-
-                        // Mark the door as opened and display the content
-                        door.classList.add('open');
-                        door.textContent = data.content;
-                    })
-                    .catch(err => {
-                        const errorDiv = document.createElement("div");
-                        errorDiv.textContent = err.message;
-                        errorDiv.style.color = "red";
-                        document.body.appendChild(errorDiv);
-                        
-                        setTimeout(() => errorDiv.remove(), 3000); // Remove the error message after 3 seconds
-                    });
-                });
-            }
-
-            calendar.appendChild(door);
-        }
+                    calendar.appendChild(door);
+                }
+            })
+            .catch(err => {
+                const errorDiv = document.createElement("div");
+                errorDiv.textContent = err.message;
+                errorDiv.style.color = "red";
+                document.body.appendChild(errorDiv);
+                
+                setTimeout(() => errorDiv.remove(), 3000); // Remove the error message after 3 seconds
+            });
     </script>
 </body>
 </html>
