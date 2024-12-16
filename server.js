@@ -90,7 +90,7 @@ app.post("/get-content", (req, res) => {
     const filteredContent = calendarContent.filter(
         (c) => c !== "Eine Runde Karten- oder Brettspiele zusammen spielen"
     );
-    const content = filteredContent[day - 14];
+    const content = filteredContent[day - 13];
     openedDoors[day] = content;
 
     try {

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Adventskalender</title>
+    <title>Adventskalender 2024</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -33,16 +33,17 @@
             cursor: pointer;
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s;
+        }
+        .door:hover {
+            transform: scale(1.05);
         }
         .door.open {
             background-color: #fff;
             color: #000;
             pointer-events: none;
-        }
-        .door.open {
             animation: openDoor 0.5s ease-in-out;
         }
-        
         @keyframes openDoor {
             from {
                 transform: rotateY(0deg);
@@ -50,16 +51,16 @@
             to {
                 transform: rotateY(180deg);
             }
-        }        
+        }
     </style>
 </head>
 <body>
-    <h1>Adventskalender</h1>
+    <h1>Adventskalender 2024</h1>
     <p>Öffne jeden Tag ein Türchen!</p>
     <div class="calendar" id="calendar"></div>
 
     <script>
-        // Backend URL from Render
+        // Backend URL
         const backendUrl = "https://advent-calendar-2024-for-mika-1.onrender.com/get-content";
 
         // Load saved results from Local Storage
@@ -76,20 +77,20 @@
             door.classList.add('door');
             door.textContent = i;
 
-            const currentDate = new Date(2024, 11, i).toISOString();
+            const doorDate = new Date(2024, 11, i).toISOString();
 
             // If the door was already opened, show the saved content
-            if (savedResults[currentDate]) {
+            if (savedResults[doorDate]) {
                 door.classList.add('open');
-                door.textContent = savedResults[currentDate];
+                door.textContent = savedResults[doorDate];
             } else {
                 // Add a click event listener for unopened doors
                 door.addEventListener('click', () => {
                     const today = new Date();
-                    const doorDate = new Date(2024, 11, i);
+                    const currentDoorDate = new Date(2024, 11, i);
 
                     // Prevent opening doors for future dates
-                    if (today < doorDate) {
+                    if (today < currentDoorDate) {
                         alert(`Dieses Türchen kannst du erst am ${i}.12. öffnen!`);
                         return;
                     }
@@ -98,32 +99,31 @@
                     fetch(backendUrl, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ date: doorDate.toISOString() })
+                        body: JSON.stringify({ date: currentDoorDate.toISOString() })
                     })
-                        .then(response => {
-                            if (!response.ok) {
-                                throw new Error("Dieses Türchen kann nicht geöffnet werden.");
-                            }
-                            return response.json();
-                        })
-                        .then(data => {
-                            // Save the result locally
-                            savedResults[doorDate.toISOString()] = data.content;
-                            localStorage.setItem('adventCalendarResults', JSON.stringify(savedResults));
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error("Dieses Türchen kann nicht geöffnet werden.");
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        // Save the result locally
+                        savedResults[doorDate] = data.content;
+                        localStorage.setItem('adventCalendarResults', JSON.stringify(savedResults));
 
-                            // Mark the door as opened and display the content
-                            door.classList.add('open');
-                            door.textContent = data.content;
-                        })
-                        .catch(err => {
-                            const errorDiv = document.createElement("div");
-                            errorDiv.textContent = err.message;
-                            errorDiv.style.color = "red";
-                            document.body.appendChild(errorDiv);
-                            
-                            setTimeout(() => errorDiv.remove(), 3000); // Entfernt die Fehlermeldung nach 3 Sekunden
-                            
-                        });
+                        // Mark the door as opened and display the content
+                        door.classList.add('open');
+                        door.textContent = data.content;
+                    })
+                    .catch(err => {
+                        const errorDiv = document.createElement("div");
+                        errorDiv.textContent = err.message;
+                        errorDiv.style.color = "red";
+                        document.body.appendChild(errorDiv);
+                        
+                        setTimeout(() => errorDiv.remove(), 3000); // Remove the error message after 3 seconds
+                    });
                 });
             }
 
