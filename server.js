@@ -7,6 +7,11 @@ const app = express();
 const port = process.env.PORT || 3000;
 const dataFile = "./openedDoors.json";
 
+// Example adjustment
+const day = requestedDate.date();
+const contentIndex = day - 13; // Adjust this calculation as needed
+const content = calendarContent[contentIndex];
+
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -48,7 +53,7 @@ app.post("/get-content", (req, res) => {
     const requestedDate = dayjs(date);
     const today = dayjs();
 
-    // Verhindere das Öffnen zukünftiger Türen
+    // Allow access to today's date and any past dates
     if (requestedDate.isAfter(today, "day")) {
         return res.status(400).json({ error: "Du kannst keine zukünftige Tür öffnen!" });
     }
@@ -57,6 +62,9 @@ app.post("/get-content", (req, res) => {
     if (day < 13 || day > 24) {
         return res.status(400).json({ error: "Ungültiges Datum für den Adventskalender!" });
     }
+
+    // Existing logic to handle content retrieval...
+});
 
     // Handle Türchen 13 with fixed content
     if (day === 13) {
