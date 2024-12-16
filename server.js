@@ -63,34 +63,21 @@ app.post("/get-content", (req, res) => {
         return res.status(400).json({ error: "Ungültiges Datum für den Adventskalender!" });
     }
 
-    // Existing logic to handle content retrieval...
-});
+    // Declare content variable once
+    let content;
 
     // Handle Türchen 13 with fixed content
     if (day === 13) {
-        const content = "Eine Runde Karten- oder Brettspiele zusammen spielen";
-        openedDoors[day] = content;
-
-        try {
-            fs.writeFileSync(dataFile, JSON.stringify(openedDoors, null, 2));
-        } catch (error) {
-            console.error("Fehler beim Speichern der Datei:", error);
-            return res.status(500).json({ error: "Interner Fehler beim Speichern des Inhalts." });
-        }
-
-        return res.json({ content });
+        content = "Eine Runde Karten- oder Brettspiele zusammen spielen";
+    } else {
+        // Tür öffnen und Inhalt speichern
+        const filteredContent = calendarContent.filter(
+            (c) => c !== "Eine Runde Karten- oder Brettspiele zusammen spielen"
+        );
+        content = filteredContent[day - 14]; // Adjusted index to match the correct content
     }
 
-    // Prüfen, ob die Tür schon geöffnet wurde
-    if (openedDoors[day]) {
-        return res.json({ content: openedDoors[day] });
-    }
-
-    // Tür öffnen und Inhalt speichern
-    const filteredContent = calendarContent.filter(
-        (c) => c !== "Eine Runde Karten- oder Brettspiele zusammen spielen"
-    );
-    const content = filteredContent[day - 13];
+    // Save the opened door content
     openedDoors[day] = content;
 
     try {
@@ -100,7 +87,7 @@ app.post("/get-content", (req, res) => {
         return res.status(500).json({ error: "Interner Fehler beim Speichern des Inhalts." });
     }
 
-    res.json({ content });
+    return res.json({ content });
 });
 
 // Fehlerbehandlungsmiddleware
